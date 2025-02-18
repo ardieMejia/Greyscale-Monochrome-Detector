@@ -1,0 +1,48 @@
+* We need to  divide files into 2 folder. One for single color (grayscale, or monochrome), the other for multicolored
+* The following are candidates:
+** histogram simple
+#+begin_src powershell
+
+  .\my_magick\magick.exe .\myfiles\1_nocolor.jpg -unique-colors -depth 16  txt:-
+
+
+#+end_src
+** count
+#+begin_src powershell
+
+  
+  magick tree.gif -fill black +opaque yellow \
+                   -fill white -opaque yellow \
+                   -print "yellow sun pixels = %[fx:w*h*mean]\n"   null:
+
+#+end_src
+* Method 1:
+** We process the colored, and leave out the monochrome
+#+begin_src powershell
+
+  .\my_magick\magick.exe .\myfiles\1_color.jpg +dither -colors 32     color_threshold.png
+
+#+end_src
+** Counts of a Specific (or near) Color (link below)
+* Saved:
+#+begin_src powershell
+
+  .\my_magick\magick.exe compare -metric RMSE xc:#272766 xc:#16162A null:
+
+#+end_src
+* Method 2:
+** Same as above followed by randomly comparing 2 colors 
+** we replace random comparing with average comparing:
+*** average comparison/diff value may be weighted by (Eg: maximum value, etc...)
+*** first we replace white with mid-gray
+*** then rescale to smaller
+*** extract the hexes value
+*** run comparison (some additional functions to deal with Powershell & IM headache dealing with text output)
+** 
+* References:
+** https://usage.imagemagick.org/quantize/
+* Exampling to the client
+** There are so many things that could happen. And the work gets easily complex. So before before  putting it to any use. Work in the script involved renaming all files to color_xxx or nocolor_xxx, etc...
+** And adjustments to the script involve changing certain variables, "weight" variables and "random  value" variables. This means, there  is  a  main .txt output file containing values of how "monochrome" a  file is. Values range from  0  to   1  (Eg: 0.45). Monochrome is closer to 0. Multicolored has higher value.
+** At certain point, development has to stop to test against many cases. So now Im the stage of testing with many files. And tweaking functions, order  of functions here and there to see the how values respond. 
+** The script   also assumes all  filenames are unique and in a single folder
