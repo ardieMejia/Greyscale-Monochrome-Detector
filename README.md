@@ -12,7 +12,7 @@
 
 ### Get-AverageHexDiff:
 
-1.  using the the hex values from /temptxt<sub>hexes</sub> files, randomy select a pair of hexes, and calculate difference. This difference is then averaged
+1.  using the the hex values from /temptxt_hexes files, randomy select a pair of hexes, and calculate difference. This difference is then averaged
 
 
 ### Get-LinesCountWeight
@@ -60,7 +60,7 @@
 ### Rename each folder better
 
 
-### There is a TODO called simplify<sub>todo</sub>:
+### There is a TODO called simplify_todo:
 
 1.  which are 2 lines meant speed up processing, as the lines produced and time were simply too much. Maybe merged into another function (also preparation methods)
 
@@ -72,6 +72,17 @@
 
 
 ### <https://usage.imagemagick.org/quantize/>
+
+
+
+## Sample sorting output (from Bacun):
+### Colored:
+
+### ![plot](./samples/Colored_result_from_Bacun.png)
+
+### Monochrome:
+
+### ![plot](./samples/Monochrome_result_from_Bacun.png)
 
 > 
 > 
