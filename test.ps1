@@ -34,7 +34,7 @@ rm ./input/*
 $_listItems = Get-ChildItem -Path ./originals
 
 
-# ===== we assume all files have unique names. We can change this later
+# Prepare files by converting into manageable size
 function   Prepare-Files(){
     param(
         [Parameter(Position=0)]
@@ -43,42 +43,39 @@ function   Prepare-Files(){
     $temp = ./my_magick/magick.exe ./originals/$($filename) -resize x1400 ./input/$($filename) | Out-String
 }
 
-
+# Also preparing files by replacing white with a mid-gray (mid between black and white)
+# this is to avoid "over-weighting" the final value 
 function Start-WhiteRemoval(){
     param(
         [Parameter(Position=0)]
         [string]$filename
     )
-    $temp = ./my_magick/magick.exe ./input/$($filename) -colorspace sRGB -fuzz 10% -fill "#808080" -opaque white ./temp_nowhite/$($filename) | Out-String
-    
     # if you remove the colorspace, some images will not respond properly to color replacement  (grayspace color doesnt respond correctly)
-    # ..\my_magick\magick.exe .\1_nocolor.jpg -colorspace sRGB -fuzz 5% -fill red -opaque white .\temp.jpg
+    $temp = ./my_magick/magick.exe ./input/$($filename) -colorspace sRGB -fuzz 10% -fill "#808080" -opaque white ./temp_nowhite/$($filename) | Out-String    
 }
 
 
-function Get-AverageHexDiff(){
-    
+function Get-AverageHexDiff(){    
     param(
 	[Parameter(Position=0)]
         [string]$filename,
         [Parameter(Position=1)]
 	[array]$hexes
     )
-
     $sum_count = 0
     for($i=0; $i -lt $hexes.count/2; $i++){
-	
+
+	# randomly get 2 hex values from the list, where this list is a single text file of reduced hex values of an image
 	$rand_num1 = Get-Random -Minimum -1 -Maximum $hexes.count
 	$rand_num2 = Get-Random -Minimum -1 -Maximum $hexes.count
 	$firstCol = $hexes[$rand_num1].split(" ")[0]
 	$secondCol = $hexes[$rand_num2].split(" ")[0]
 
-
-
 	
 	# ========== file cleaning ==========
 	# TODO: replace temp file with variable, if possible
 	$tempname = "./temptxt_val/"+$item.name.split(".")[0]+"_tempval.txt"
+	# an IM image calculation that calculates difference between 2 colors (2 values)
 	$(.\my_magick\magick.exe compare -metric RMSE xc:$firstCol xc:$secondCol txt:-) *> $tempname
 	$unclean = Get-Content -path $tempname
 	$unclean[2].split("(")[1].split(")")[0] | Out-File -FilePath $tempname
@@ -86,13 +83,11 @@ function Get-AverageHexDiff(){
 	$rand_diff_sum += [float]$single_val
 	# ========== file cleaning ==========
 	
-
-	
 	
 	$sum_count += 1
     }
 
-    # $rand_num is the we need, average of color differences of pairs, across only half of pixels from the scaled down image
+    # so in the end, $rand_num is what we need, average of color differences of pairs, across only half of pixels from the scaled down image
     $rand_num = $rand_diff_sum / $sum_count
     Write-Output $rand_num
     
@@ -181,12 +176,20 @@ function Copy-FilesToFolder{
     }
 }
 
-
+# we prepare files from /original folder
+# white-removal is also a part of the preparation process
 for($i=0; $i -lt $_listItems.Count; $i++){
     Prepare-Files($_listItems[$i].name)
     Start-WhiteRemoval($_listItems[$i].name)
+    
+    # ===== TODO: simplify_todo: the following 2 lines sit there awkwardly becoz later processing after these simply produced too many files, and took too long
+    # further reduce in color. 
     $temp = ./my_magick/magick.exe ./temp_nowhite/$($_listItems[$i]) +dither   -posterize 3   ./temp_reduce/$($_listItems[$i]) | Out-String
+    # further reduce in size
     $temp =  ./my_magick/magick.exe ./temp_reduce/$($_listItems[$i])  -resize 10x ./temp_scaled/$($_listItems[$i]) | Out-String
+    # ======================================================================================================================================= 
+
+    
     (./my_magick/magick.exe ./temp_scaled/$($_listItems[$i]) -unique-colors -depth 8  txt:-) | Out-File -FilePath ./temptxt/$($_listItems[$i]).txt
 }
 
@@ -196,14 +199,10 @@ $_list = Get-ChildItem -Path ./originals
 # ========== the 3rd index from each row in .<image-name>.txt will get  the colmn we want, becoz making IM text output behave consistent is a headache
 
 
-foreach ($itemT in $_list){
-
-    # Write-Output $itemT.fullname
-    # exit
-    
+foreach ($itemT in $_list){    
     $csvData = Get-Content -path "./temptxt/$($itemT.name).txt"
-
     $i = 1
+    
     foreach($item in $csvData){
 	$item = $item.replace("  "," ")
 	$item = $item.split(" ")
@@ -214,9 +213,9 @@ foreach ($itemT in $_list){
 	    # Write-Output $name
 	    $item[3] = Set-Gray($item[3])
 	    Write-Output "$($item[2]) $($item[3])" | Out-File -append -FilePath $name
-	}
+	}	
 	$i += 1
-    }
+    }    
 }
 
 
@@ -227,9 +226,7 @@ $csvHexes = Get-ChildItem -path ./temptxt_hexes/
 foreach($item in $csvHexes){
 
     $hexes = Get-Content -Path $item.fullname
-
-    
-
+   
 
     $finalname = "./tempfinal_val/"+$item.name.split("!")[0]+"!singlefinalval.txt"
     $itemname = [String]$item.name
